@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Production veya development için API base URL'ini ayarla
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Vercel'de aynı domain olacak
+  : 'http://localhost:3000'; // Local development için
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -34,6 +37,7 @@ export const fetchProducts = async (filters = {}) => {
   if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
   if (filters.minPopularity) params.append('minPopularity', filters.minPopularity);
   if (filters.maxPopularity) params.append('maxPopularity', filters.maxPopularity);
+  
   const response = await api.get(`/api/products${params.toString() ? `?${params.toString()}` : ''}`);
   if (response.data.success) return response.data.data;
   throw new Error(response.data.message || 'Failed to fetch products');
@@ -45,7 +49,7 @@ export const fetchProducts = async (filters = {}) => {
  * @returns {Promise<Object>}
  */
 export const fetchProduct = async (id) => {
-  const response = await api.get(`/api/products/${id}`);
+  const response = await api.get(`/api/products?id=${id}`);
   if (response.data.success) return response.data.data;
   throw new Error(response.data.message || 'Failed to fetch product');
 };
@@ -65,7 +69,7 @@ export const fetchGoldPrice = async () => {
  * @returns {Promise<Object>}
  */
 export const checkHealth = async () => {
-  const response = await api.get('/health');
+  const response = await api.get('/api/health');
   if (response.data.success) return response.data;
   throw new Error(response.data.message || 'Health check failed');
 };

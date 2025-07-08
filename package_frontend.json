@@ -1,15 +1,7 @@
 {
-  "name": "gold-jewelry-store",
-  "version": "1.0.0",
+  "name": "product-listing-frontend",
+  "version": "0.1.0",
   "private": true,
-  "description": "Gold jewelry store with real-time pricing",
-  "main": "index.js",
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.4.0",
@@ -19,13 +11,13 @@
     "react-scripts": "5.0.1",
     "axios": "^1.6.0",
     "swiper": "^8.4.7",
-    "web-vitals": "^2.1.4",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "web-vitals": "^2.1.4"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -45,7 +37,5 @@
       "last 1 safari version"
     ]
   },
-  "keywords": ["react", "jewelry", "gold", "ecommerce", "vercel"],
-  "author": "",
-  "license": "ISC"
+  "proxy": "http://localhost:3001"
 } 

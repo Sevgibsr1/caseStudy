@@ -1,33 +1,24 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
-
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Load products data
-const loadProducts = () => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, 'products.json'), 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error loading products:', error);
-    return [];
-  }
-};
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
 // Cache for gold price (refresh every 30 minutes)
 let goldPriceCache = {
   price: null,
   timestamp: null,
   ttl: 30 * 60 * 1000 // 30 minutes
+};
+
+// Load products data
+const loadProducts = () => {
+  try {
+    const productsPath = path.join(process.cwd(), 'products.json');
+    const data = fs.readFileSync(productsPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error loading products:', error);
+    return [];
+  }
 };
 
 // Fetch gold price from API
@@ -39,7 +30,7 @@ const fetchGoldPrice = async () => {
       return goldPriceCache.price;
     }
 
-    const apiKey = process.env.GOLD_API_KEY || 'goldapi-64pusmcuh5ttc-io';
+    const apiKey = process.env.GOLD_API_KEY;
     if (!apiKey) {
       throw new Error('Gold API key is not configured.');
     }
@@ -86,11 +77,45 @@ const processProducts = async (products) => {
   }));
 };
 
-// Routes
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-// Get all products
-app.get('/api/products', async (req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   try {
+    const { id } = req.query;
+
+    if (id) {
+      // Get single product by ID
+      const products = loadProducts();
+      const productId = parseInt(id);
+      
+      if (productId < 1 || productId > products.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+      
+      const processedProducts = await processProducts([products[productId - 1]]);
+      
+      return res.json({
+        success: true,
+        data: processedProducts[0]
+      });
+    }
+
+    // Get all products
     const products = loadProducts();
     const processedProducts = await processProducts(products);
     
@@ -127,69 +152,4 @@ app.get('/api/products', async (req, res) => {
       error: error.message
     });
   }
-});
-
-// Get single product by index
-app.get('/api/products/:id', async (req, res) => {
-  try {
-    const products = loadProducts();
-    const productId = parseInt(req.params.id);
-    
-    if (productId < 0 || productId >= products.length) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-    
-    const processedProducts = await processProducts([products[productId]]);
-    
-    res.json({
-      success: true,
-      data: processedProducts[0]
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching product',
-      error: error.message
-    });
-  }
-});
-
-// Get current gold price
-app.get('/api/gold-price', async (req, res) => {
-  try {
-    const goldPrice = await fetchGoldPrice();
-    res.json({
-      success: true,
-      data: {
-        pricePerGram: parseFloat(goldPrice.toFixed(2)),
-        currency: 'USD',
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching gold price',
-      error: error.message
-    });
-  }
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Products API: http://localhost:${PORT}/api/products`);
-}); 
+} 
